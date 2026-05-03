@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "NBA Pipeline",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "nba_db",
+            "Username": "airflow",
+            "SSLMode": "prefer"
+        }
+    }
+}
