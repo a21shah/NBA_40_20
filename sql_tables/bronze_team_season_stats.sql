@@ -1,3 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS BRONZE;
+
 CREATE TABLE IF NOT EXISTS BRONZE.team_season_stats (
     YEAR varchar(10),
     TEAM_ID int,

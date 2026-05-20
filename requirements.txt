@@ -1,3 +1,4 @@
 nba_api
 psycopg2
 pandas
+dbt-postgres
