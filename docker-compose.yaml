@@ -14,7 +14,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: ["CMD", "pg_isready", "-U", "airflow", "-d", "nba_db"]
       interval: 5s
       retries: 5
 
@@ -25,6 +25,7 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      GUNICORN_ACCESS_LOGFILE: '/dev/null'
     ports:
       - "5050:80"
     volumes:
