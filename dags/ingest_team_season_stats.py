@@ -39,17 +39,23 @@ def workflow():
         return team_ids
 
     @task()
-    def api_get_team_stats(ids):
+    def api_get_team_stats(team_ids):
+        context = get_current_context()
+
         cols = ['TEAM_ID', 'TEAM_CITY', 'TEAM_NAME', 'YEAR', 'GP', 'WINS', 'LOSSES', 'CONF_RANK', 'CONF_COUNT', 'PO_WINS', 'PO_LOSSES', 'NBA_FINALS_APPEARANCE']
         df_final = pd.DataFrame()
         counter = 0
         batch = 1
+
+        team_id_override = context['dag_run'].conf.get('team_id', None)
+        if team_id_override:
+            team_ids = [team_id_override]
         
-        for id in ids:
-            print(f'Getting data for Team: {id}')
+        for team_id in team_ids:
+            print(f'Getting data for Team: {team_id}')
             
             stats = teamyearbyyearstats.TeamYearByYearStats(
-                team_id = id,
+                team_id = team_id,
                 timeout=60
             )
 
@@ -62,11 +68,12 @@ def workflow():
 
             df_final = pd.concat([df_final, df])
 
-            if counter % 10 == 0:
-                sleep(120)
-                batch += 1
-            else:
-                sleep(30)
+            if counter < len(team_ids):
+                if counter % 10 == 0:
+                    sleep(120)
+                    batch += 1
+                else:
+                    sleep(30)
 
         return df_final
     
@@ -76,7 +83,17 @@ def workflow():
         columns = ','.join(list(df.columns.to_list()))
         table_team_stats = 'BRONZE.team_season_stats'
         
-        query = f'INSERT INTO {table_team_stats}({columns}) VALUES %s ON CONFLICT (year, team_id) DO NOTHING' # upsert the data
+        query = f"""INSERT INTO {table_team_stats}({columns}) VALUES %s 
+                    ON CONFLICT (year, team_id) 
+                    DO UPDATE SET
+                    gp = EXCLUDED.gp,
+                    wins = EXCLUDED.wins,
+                    losses = EXCLUDED.losses,
+                    conf_rank = EXCLUDED.conf_rank,
+                    po_wins = EXCLUDED.po_wins,
+                    po_losses = EXCLUDED.po_losses,
+                    nba_finals_appearance = EXCLUDED.nba_finals_appearance
+                    """ # upsert the data
         
         try:
             print('This is the query:', query)
