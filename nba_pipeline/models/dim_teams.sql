@@ -1,4 +1,4 @@
-{{ config(schema='silver', materialized='table') }}
+{{ config(schema='silver', materialized='view') }}
 
 with team_history as (
     select distinct
@@ -36,8 +36,8 @@ grouped as (
 
 select
     team_id,
-    team_name,
     team_city,
+    team_name,
     min(season) as valid_from,
     max(season) as valid_to,
     max(season) = max(max(season)) over (partition by team_id) as is_current
