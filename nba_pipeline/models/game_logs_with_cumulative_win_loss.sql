@@ -8,12 +8,12 @@ with_cumulative as (
     select
         *,
         sum(is_win) over (
-            partition by team_id, season
+            partition by team_id, year
             order by game_date
             rows between unbounded preceding and current row
         ) as cumulative_wins,
         sum(is_loss) over (
-            partition by team_id, season
+            partition by team_id, year
             order by game_date
             rows between unbounded preceding and current row
         ) as cumulative_losses

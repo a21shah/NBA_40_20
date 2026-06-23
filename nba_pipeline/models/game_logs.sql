@@ -6,7 +6,7 @@ with source as (
 select
     game_id,
     wl,
-    year as season,
+    year,
     season_id,
     team_id,
     team_abbreviation,
