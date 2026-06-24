@@ -12,6 +12,13 @@ def get_db_connection():
 
 # Load data
 @st.cache_data
+def load_playoff_results():
+    engine = get_db_connection()
+    query = "SELECT team_id, year, playoff_round FROM gold.playoff_results"
+    df = pd.read_sql(query, engine)
+    return df
+
+@st.cache_data
 def load_40_20_data():
     engine  = get_db_connection()
     query = "SELECT * FROM gold.rule_40_20 ORDER BY year, team_name"
@@ -74,9 +81,7 @@ with tab1:
     all_data['custom_rule'] = (all_data['wins_at_20th_loss'].isna()) | (all_data['wins_at_20th_loss'] >= wins_threshold)
     
     # Load playoff results for all years
-    engine = get_db_connection()
-    playoff_query = "SELECT team_id, year, playoff_round FROM gold.playoff_results"
-    playoff_df = pd.read_sql(playoff_query, engine)
+    playoff_df = load_playoff_results()
     
     # Merge with 40-20 data
     all_data = all_data.merge(playoff_df[['team_id', 'year', 'playoff_round']], on=['team_id', 'year'], how='left')
@@ -134,13 +139,13 @@ with tab3:
     year_data = data_40_20[data_40_20['year'] == selected_year].sort_values('final_wins', ascending=False)
     
     # Load playoff results for this year
-    engine = get_db_connection()
-    playoff_query = f"SELECT team_id, playoff_round FROM gold.playoff_results WHERE year = '{selected_year}'"
-    playoff_df = pd.read_sql(playoff_query, engine)
+    playoff_df = load_playoff_results()
+    playoff_df_year = playoff_df[playoff_df['year'] == selected_year]
     
     # Merge with 40-20 data
-    year_data = year_data.merge(playoff_df[['team_id', 'playoff_round']], on='team_id', how='left')
-
+    year_data = year_data.merge(playoff_df_year[['team_id', 'playoff_round']], on='team_id', how='left')
+    
+    # Filter option
     exclude_missed = st.checkbox("Exclude teams that missed playoffs", value=False)
     if exclude_missed:
         year_data = year_data[year_data['playoff_round'] != 'Missed Playoffs']
@@ -152,3 +157,4 @@ with tab3:
             "achieved_40_20_rule": st.column_config.CheckboxColumn("40-20 Rule")
         }
     )
+    
