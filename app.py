@@ -26,7 +26,10 @@ def load_champion_data():
     return df
 
 # Page config
-st.set_page_config(page_title="NBA 40-20 Rule Analysis", layout="wide")
+st.set_page_config(
+    layout='wide',
+    page_title="NBA 40-20 Rule Analysis",
+    page_icon='basketball-ball.png')
 st.title("🏀 NBA 40-20 Rule Analysis")
 
 # Load data
@@ -43,8 +46,8 @@ selected_year = st.sidebar.selectbox(
 
 wins_threshold = st.sidebar.slider(
     "Wins Threshold",
-    min_value=30,
-    max_value=60,
+    min_value=0,
+    max_value=82,
     value=40,
     step=1,
     help="Custom wins threshold before losses"
@@ -52,8 +55,8 @@ wins_threshold = st.sidebar.slider(
 
 losses_threshold = st.sidebar.slider(
     "Losses Threshold",
-    min_value=10,
-    max_value=30,
+    min_value=0,
+    max_value=82,
     value=20,
     step=1,
     help="Custom losses threshold"
@@ -66,23 +69,29 @@ tab1, tab2, tab3 = st.tabs(["Custom Rule Analysis", "Champions Analysis", "Full 
 with tab1:
     st.subheader(f"Teams achieving {wins_threshold}W before {losses_threshold}L in {selected_year}")
     
-    year_data = data_40_20[data_40_20['year'] == selected_year].copy()
+    # Apply custom rule to all years
+    all_data = data_40_20.copy()
+    all_data['custom_rule'] = (all_data['wins_at_20th_loss'].isna()) | (all_data['wins_at_20th_loss'] >= wins_threshold)
     
-    # Load playoff results for this year
+    # Load playoff results for all years
     engine = get_db_connection()
-    playoff_query = f"SELECT team_id, playoff_round FROM gold.playoff_results WHERE year = '{selected_year}'"
+    playoff_query = "SELECT team_id, year, playoff_round FROM gold.playoff_results"
     playoff_df = pd.read_sql(playoff_query, engine)
     
     # Merge with 40-20 data
-    year_data = year_data.merge(playoff_df[['team_id', 'playoff_round']], on='team_id', how='left')
+    all_data = all_data.merge(playoff_df[['team_id', 'year', 'playoff_round']], on=['team_id', 'year'], how='left')
     
-    # Filter: teams that either never hit 20 losses (null wins_at_20th_loss) or had 40+ wins when they did
-    satisfied = year_data[(year_data['wins_at_20th_loss'].isna()) | (year_data['wins_at_20th_loss'] >= wins_threshold)]
+    # Filter to satisfied teams
+    satisfied = all_data[all_data['custom_rule'] == True].sort_values(['year', 'team_name'], ascending=[False, True])
     
-    st.metric("Teams Satisfied", len(satisfied))
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Teams Satisfied (All Time)", len(satisfied))
+    with col2:
+        st.metric("Unique Seasons", satisfied['year'].nunique())
     
     st.dataframe(
-        satisfied[['team_name', 'final_wins', 'final_losses', 'wins_at_20th_loss', 'playoff_round']],
+        satisfied[['year', 'team_name', 'final_wins', 'final_losses', 'wins_at_20th_loss', 'playoff_round']],
         width='stretch'
     )
 
