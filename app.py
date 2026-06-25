@@ -143,27 +143,36 @@ with tab2:
 
 # Tab 3: Full Season Breakdown
 with tab3:
-    st.subheader(f"All Teams - {selected_year} Season")
     
-    year_data = data_40_20[data_40_20['year'] == selected_year].sort_values('final_wins', ascending=False)
-    
-    # Load playoff results for this year
-    playoff_df = load_playoff_results()
-    playoff_df_year = playoff_df[playoff_df['year'] == selected_year]
-    
-    # Merge with 40-20 data
-    year_data = year_data.merge(playoff_df_year[['team_id', 'playoff_round']], on='team_id', how='left')
-    
-    # Filter option
-    exclude_missed = st.checkbox("Exclude teams that missed playoffs", value=False)
-    if exclude_missed:
-        year_data = year_data[year_data['playoff_round'] != 'Missed Playoffs']
-    
-    st.dataframe(
-        year_data[['team_name', 'final_wins', 'final_losses', 'wins_at_20th_loss', 'achieved_40_20_rule', 'playoff_round']],
-        width='stretch',
-        column_config={
-            "achieved_40_20_rule": st.column_config.CheckboxColumn("40-20 Rule")
-        }
+    playoff_df = playoff_df[['year', 'team_id', 'gp', 'wins', 'losses', 'conf_rank','po_wins','po_losses', 'playoff_round']]
+    data_40_20 = data_40_20[['year', 'team_id', 'team_name', 'date_of_20th_loss', 'wins_at_20th_loss','achieved_40_20_rule']]
+
+    df = pd.merge(left=playoff_df, right=data_40_20, on=['team_id', 'year'], how='inner')
+
+    years = sorted(df['year'].unique(), reverse=True)
+
+    selected_year = st.selectbox(
+        "Select Year",
+        years,
+        index=None,
+        placeholder='Select year from dropdown...'
     )
+    
+    if selected_year:
+        st.subheader(f"All Teams - {selected_year} Season")
+    
+        year_data = df[df['year'] == selected_year].sort_values(['po_wins', 'wins'], ascending=False)
+        
+        # Filter option
+        exclude_missed = st.checkbox("Exclude teams that missed playoffs", value=False)
+        if exclude_missed:
+            year_data = year_data[year_data['playoff_round'] != 'Missed Playoffs']
+        
+        st.dataframe(
+            year_data[['team_name', 'wins', 'losses', 'wins_at_20th_loss', 'achieved_40_20_rule', 'playoff_round']],
+            width='stretch',
+            column_config={
+                "achieved_40_20_rule": st.column_config.CheckboxColumn("40-20 Rule")
+            }
+        )
     
