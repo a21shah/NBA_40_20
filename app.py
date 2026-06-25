@@ -52,32 +52,6 @@ playoff_df = load_playoff_results()
 data_40_20 = load_40_20_data()
 champion_data = load_champion_data()
 
-# Sidebar filters
-st.sidebar.header("Filters")
-selected_year = st.sidebar.selectbox(
-    "Select Year",
-    sorted(data_40_20['year'].unique()),
-    index=len(data_40_20['year'].unique()) - 1
-)
-
-wins_threshold = st.sidebar.slider(
-    "Wins Threshold",
-    min_value=0,
-    max_value=82,
-    value=40,
-    step=1,
-    help="Custom wins threshold before losses"
-)
-
-losses_threshold = st.sidebar.slider(
-    "Losses Threshold",
-    min_value=0,
-    max_value=82,
-    value=20,
-    step=1,
-    help="Custom losses threshold"
-)
-
 # Main tabs
 tab1, tab2, tab3 = st.tabs(["Custom Rule Analysis", "Champions Analysis", "Full Season Breakdown"])
 
@@ -87,9 +61,9 @@ with tab1:
     col_slider1, col_slider2 = st.columns(2)
 
     if "wins_slider" not in st.session_state:
-        st.session_state.wins_slider = 0
+        st.session_state.wins_slider = 40
     if "losses_slider" not in st.session_state:
-        st.session_state.losses_slider = 0
+        st.session_state.losses_slider = 20
 
     wins_value = st.session_state.wins_slider
     losses_value = st.session_state.losses_slider
