@@ -83,29 +83,77 @@ tab1, tab2, tab3 = st.tabs(["Custom Rule Analysis", "Champions Analysis", "Full 
 
 # Tab 1: Custom Rule Analysis
 with tab1:
-    st.subheader(f"Teams achieving {wins_threshold}W before {losses_threshold}L in {selected_year}")
+
+    col_slider1, col_slider2 = st.columns(2)
+
+    if "wins_slider" not in st.session_state:
+        st.session_state.wins_slider = 0
+    if "losses_slider" not in st.session_state:
+        st.session_state.losses_slider = 0
+
+    wins_value = st.session_state.wins_slider
+    losses_value = st.session_state.losses_slider
+
+    with col_slider1:
+        max_wins = max(0, 82 - losses_value)
+        wins_value = st.slider(
+            "Wins Threshold",
+            min_value=0,
+            max_value=max_wins if max_wins > 0 else 1,
+            value=wins_value,
+            step=1,
+            key="wins_slider",
+            disabled=losses_value >= 82,
+            help="Wins achieved before losses"
+        )
+        if wins_value != st.session_state.wins_slider:
+            st.session_state.wins_slider = wins_value
+            st.session_state.losses_slider = min(
+                losses_value,
+                max(0, 82 - wins_value)
+            )
+
+    with col_slider2:
+        max_losses = max(0, 82 - st.session_state.wins_slider)
+        losses_value = st.slider(
+            "Losses Threshold",
+            min_value=0,
+            max_value=max_losses if max_losses > 0 else 1,
+            value=st.session_state.losses_slider,
+            step=1,
+            key="losses_slider",
+            disabled=st.session_state.wins_slider >= 82,
+            help="Losses achieved before wins"
+        )
+        if losses_value != st.session_state.losses_slider:
+            st.session_state.losses_slider = losses_value
+            st.session_state.wins_slider = min(
+                st.session_state.wins_slider,
+                max(0, 82 - losses_value)
+            )
+
+    wins_threshold = st.session_state.wins_slider
+    losses_threshold = st.session_state.losses_slider
+
+    st.caption("Wins + losses cannot exceed 82 games.")
     
-    # Apply custom rule to all years
-    all_data = data_40_20.copy()
-    all_data['custom_rule'] = (all_data['wins_at_20th_loss'].isna()) | (all_data['wins_at_20th_loss'] >= wins_threshold)
+    st.subheader(f"Teams achieving {wins_threshold} Wins before {losses_threshold} Losses")
     
-    # Load playoff results for all years
-    playoff_df = load_playoff_results()
+    win_loss = cumu_win_loss_df[['year', 'team_id', 'team_name', 'cumulative_wins', 'cumulative_losses']].copy()
+    win_loss = win_loss[(win_loss['cumulative_wins'] == wins_threshold) & (win_loss['cumulative_losses'] <= losses_threshold)]
+  
+    playoff_df_tab1 = playoff_df[['year', 'team_id', 'gp', 'wins', 'losses', 'playoff_round']]
     
-    # Merge with 40-20 data
-    all_data = all_data.merge(playoff_df[['team_id', 'year', 'playoff_round']], on=['team_id', 'year'], how='left')
-    
-    # Filter to satisfied teams
-    satisfied = all_data[all_data['custom_rule'] == True].sort_values(['year', 'team_name'], ascending=[False, True])
-    
+    all_data = pd.merge(left=win_loss, right=playoff_df_tab1, on=['team_id', 'year'], how='inner')
+        
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Teams Satisfied (All Time)", len(satisfied))
+        st.metric("Teams Satisfied (All Time)", len(all_data['team_id'].tolist()))
     with col2:
-        st.metric("Unique Seasons", satisfied['year'].nunique())
+        st.metric("Unique Seasons", all_data['year'].nunique())
     
     st.dataframe(
-        satisfied[['year', 'team_name', 'final_wins', 'final_losses', 'wins_at_20th_loss', 'playoff_round']],
+        all_data[['year', 'team_name', 'wins', 'losses', 'cumulative_wins', 'cumulative_losses', 'playoff_round']].sort_values('year', ascending=False),
         width='stretch'
     )
 
