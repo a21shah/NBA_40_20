@@ -1,4 +1,4 @@
-{{ config(schema='silver', materialized='view') }}
+{{ config(materialized='view') }}
 
 with team_history as (
     select distinct

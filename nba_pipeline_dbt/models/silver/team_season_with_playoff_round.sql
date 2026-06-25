@@ -1,4 +1,4 @@
-{{ config(schema='silver', materialized='view') }}
+{{ config(materialized='view') }}
 
 with source as (
     select * from {{ source('bronze', 'team_season_stats') }}

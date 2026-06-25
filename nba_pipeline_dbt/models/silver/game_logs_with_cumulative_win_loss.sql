@@ -1,4 +1,4 @@
-{{ config(schema='silver', materialized='table') }}
+{{ config(materialized='table') }}
 
 with source as (
     select * from {{ ref('game_logs') }}

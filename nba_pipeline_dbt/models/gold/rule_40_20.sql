@@ -1,4 +1,4 @@
-{{ config(schema='gold', materialized='table') }}
+{{ config(materialized='table') }}
 
 with game_logs as (
     select * from {{ ref('game_logs_with_cumulative_win_loss') }}

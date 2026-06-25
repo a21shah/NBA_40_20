@@ -1,4 +1,4 @@
-{{ config(schema='gold', materialized='table') }}
+{{ config(materialized='table') }}
 
 with rule as (
     select * from {{ ref('rule_40_20') }}
