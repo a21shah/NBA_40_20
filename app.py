@@ -12,9 +12,16 @@ def get_db_connection():
 
 # Load data
 @st.cache_data
+def load_cumulative_win_loss_data():
+    engine  = get_db_connection()
+    query = "SELECT * FROM silver.game_logs_with_cumulative_win_loss"
+    df = pd.read_sql(query, engine)
+    return df
+
+@st.cache_data
 def load_playoff_results():
     engine = get_db_connection()
-    query = "SELECT team_id, year, playoff_round FROM gold.playoff_results"
+    query = "SELECT * FROM gold.playoff_results ORDER BY year, po_wins DESC"
     df = pd.read_sql(query, engine)
     return df
 
@@ -28,7 +35,7 @@ def load_40_20_data():
 @st.cache_data
 def load_champion_data():
     engine  = get_db_connection()
-    query = "SELECT * FROM gold.champion_40_20 ORDER BY year"
+    query = "SELECT * FROM gold.champion_40_20 ORDER BY year DESC"
     df = pd.read_sql(query, engine)
     return df
 
@@ -40,6 +47,8 @@ st.set_page_config(
 st.title("🏀 NBA 40-20 Rule Analysis")
 
 # Load data
+cumu_win_loss_df = load_cumulative_win_loss_data()
+playoff_df = load_playoff_results()
 data_40_20 = load_40_20_data()
 champion_data = load_champion_data()
 
